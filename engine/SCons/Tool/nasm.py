@@ -37,30 +37,29 @@ import SCons.Defaults
 import SCons.Tool
 import SCons.Util
 
-ASSuffixes = ['.s', '.asm', '.ASM']
-ASPPSuffixes = ['.spp', '.SPP', '.sx']
-if SCons.Util.case_sensitive_suffixes('.s', '.S'):
-    ASPPSuffixes.extend(['.S'])
-else:
-    ASSuffixes.extend(['.S'])
+ASSuffixes = ['.s', '.asm', '.ASM', '.nasm']
 
 def generate(env):
     """Add Builders and construction variables for nasm to an Environment."""
+    
     static_obj, shared_obj = SCons.Tool.createObjBuilders(env)
+    #NASMCOMSTR - The string displayed when a nasm source file is compiled to a (static) object file.
+    NasmAction = SCons.Action.Action('$NASMCOM', '$NASMCOMSTR')
 
     for suffix in ASSuffixes:
-        static_obj.add_action(suffix, SCons.Defaults.ASAction)
+        static_obj.add_action(suffix, NasmAction)
+        shared_obj.add_action(suffix, NasmAction)
         static_obj.add_emitter(suffix, SCons.Defaults.StaticObjectEmitter)
+        shared_obj.add_emitter(suffix, SCons.Defaults.StaticObjectEmitter)
 
-    for suffix in ASPPSuffixes:
-        static_obj.add_action(suffix, SCons.Defaults.ASPPAction)
-        static_obj.add_emitter(suffix, SCons.Defaults.StaticObjectEmitter)
+    nasm = env.Detect('nasm')
 
-    env['AS']        = 'nasm'
-    env['ASFLAGS']   = SCons.Util.CLVar('')
-    env['ASPPFLAGS'] = '$ASFLAGS'
-    env['ASCOM']     = '$AS $ASFLAGS -o $TARGET $SOURCES'
-    env['ASPPCOM']   = '$CC $ASPPFLAGS $CPPFLAGS $_CPPDEFFLAGS $_CPPINCFLAGS -c -o $TARGET $SOURCES'
+    env['NASM']        = nasm
+    if env['PLATFORM'] is not 'win32': #Assume not win32 means Linux (see dmd.py)!
+        env['NASMFLAGS']   = ['-felf']
+
+    env['NASMCOM']     = '$NASM $NASMFLAGS -o $TARGET $SOURCES'
+
 
 def exists(env):
     return env.Detect('nasm')

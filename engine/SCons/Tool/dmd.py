@@ -191,44 +191,34 @@ def generate(env):
         env['ARCOM'] = '$SMART_ARCOM '
         env['LINKCOM'] = '$SMART_LINKCOM '
     else: # assuming linux
-        linkcom = env.get('LINKCOM')
         try:
-            env['SMART_LINKCOM'] = smart_link[linkcom]
+            libs = env['LIBS']
         except KeyError:
-            def _smartLink(source, target, env, for_signature,
-                           defaultLinker=linkcom, dc=dc):
-                if isD(source):
-                    try:
-                        libs = env['LIBS']
-                    except KeyError:
-                        libs = []
-                    if dc == 'dmd':
-                        # TODO: This assumes that the dmd executable is in the
-                        # bin directory and that the libraries are in a peer
-                        # directory lib.  This true of the Digital Mars
-                        # distribution but . . .
-                        import glob
-                        dHome = env.WhereIs(dc).replace('/dmd' , '/..')
-                        if glob.glob(dHome + '/lib/*phobos2*'):
-                            if 'phobos2' not in libs:
-                                env.Append(LIBPATH = [dHome + '/lib'])
-                                env.Append(LIBS = ['phobos2'])
-                                # TODO: Find out when there will be a
-                                # 64-bit version of D.
-                                env.Append(LINKFLAGS = ['-m32'])
-                        else:
-                            if 'phobos' not in libs:
-                                env.Append(LIBS = ['phobos'])
-                    elif dc is 'gdmd':
-                        env.Append(LIBS = ['gphobos'])
-                    if 'pthread' not in libs:
-                        env.Append(LIBS = ['pthread'])
-                    if 'm' not in libs:
-                        env.Append(LIBS = ['m'])
-                return defaultLinker
-            env['SMART_LINKCOM'] = smart_link[linkcom] = _smartLink
+            libs = []
+        if dc == 'dmd':
+            # TODO: This assumes that the dmd executable is in the
+            # bin directory and that the libraries are in a peer
+            # directory lib.  This true of the Digital Mars
+            # distribution but . . .
+            import glob
+            dHome = env.WhereIs(dc).replace('/dmd' , '/..')
+            if glob.glob(dHome + '/lib/*phobos2*'):
+                if 'phobos2' not in libs:
+                    env.Append(LIBPATH = [dHome + '/lib'])
+                    env.Append(LIBS = ['phobos2'])
+                    # TODO: Find out when there will be a
+                    # 64-bit version of D.
+                    env.Append(LINKFLAGS = ['-m32'])
+            else:
+                if 'phobos' not in libs:
+                    env.Append(LIBS = ['phobos'])
+        elif dc is 'gdmd':
+            env.Append(LIBS = ['gphobos'])
+        if 'pthread' not in libs:
+            env.Append(LIBS = ['pthread'])
+        if 'm' not in libs:
+            env.Append(LIBS = ['m'])
 
-        env['LINKCOM'] = '$SMART_LINKCOM '
 
 def exists(env):
     return env.Detect(['dmd', 'gdmd'])
